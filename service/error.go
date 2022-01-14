@@ -19,9 +19,9 @@ type ErrorResponse struct {
 }
 
 type ValidationErrors struct {
-	FirstName            string `json:"first_name,omitempty"`
+	Name                 string `json:"name,omitempty"`
 	OthersNames          string `json:"others_names,omitempty"`
-	FirstLastName        string `json:"first_last_name,omitempty"`
+	LastName             string `json:"last_name,omitempty"`
 	SecondLastName       string `json:"second_last_name,omitempty"`
 	Countries            string `json:"countries,omitempty"`
 	IdentificationType   string `json:"identification_type,omitempty"`

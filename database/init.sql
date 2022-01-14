@@ -20,9 +20,9 @@ create table employees
 (
     id                     uuid         not null
         primary key,
-    first_name             varchar(20)  not null,
+    name             varchar(20)  not null,
     others_names           varchar(20),
-    first_last_name        varchar(20)  not null,
+    last_name        varchar(20)  not null,
     second_last_name       varchar(20)  not null,
     countries_id           integer
         constraint employees_countries_fk

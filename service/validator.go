@@ -25,12 +25,12 @@ func (v *cidenetValidator) EmployeesRequest(employee *Request_Response.Employees
 	var newErrors ValidationErrors
 	var existError bool
 
-	if len(employee.FirstName) == 0 {
-		newErrors.FirstName = Required
+	if len(employee.Name) == 0 {
+		newErrors.Name = Required
 		existError = true
 	}
-	if len(employee.FirstLastName) == 0 {
-		newErrors.FirstLastName = Required
+	if len(employee.LastName) == 0 {
+		newErrors.Name = Required
 		existError = true
 	}
 	if len(employee.SecondLastName) == 0 {
@@ -70,13 +70,13 @@ func (v *cidenetValidator) Employees(employee *Request_Response.EmployeesRequest
 	var newErrors ValidationErrors
 	var existError bool
 
-	if ok := v.Utilities.RegularExpression(employee.FirstName, "upper"); len(employee.FirstName) > 20 || !ok {
-		newErrors.FirstName = Format
+	if ok := v.Utilities.RegularExpression(employee.Name, "upper"); len(employee.Name) > 20 || !ok {
+		newErrors.Name = Format
 		existError = true
 	}
 
-	if ok := v.Utilities.RegularExpression(employee.FirstLastName, "upper&space"); len(employee.FirstLastName) > 20 || !ok {
-		newErrors.FirstLastName = Format
+	if ok := v.Utilities.RegularExpression(employee.LastName, "upper&space"); len(employee.LastName) > 20 || !ok {
+		newErrors.LastName = Format
 		existError = true
 	}
 

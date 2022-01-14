@@ -1,11 +1,11 @@
 package Logic
 
 type (
-	EmployeesRequest struct {
+	Employee struct {
 		Uuid                 string
-		FirstName            string
+		Name                 string
 		OthersNames          string
-		firstLastName        string
+		LastName             string
 		SecondLastName       string
 		Countries            int
 		IdentificationType   int

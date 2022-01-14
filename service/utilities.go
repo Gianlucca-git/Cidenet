@@ -13,7 +13,7 @@ import (
 // Utilities is utilities for development
 type Utilities interface {
 	// Normalize Function that normalizes a string, substituting uppercase letters for lowercase letters and removing tilde
-	Normalize(str string) (*string, error)
+	Normalize(str string, typeExpression string) (string, error)
 	// RegularExpression Dictionary of regular expressions that returns a Boolean evaluating the selected expression
 	RegularExpression(str string, typeExpression string) bool
 }
@@ -29,17 +29,24 @@ const (
 	yyyy_mm_dd = "2006-01-02"
 )
 
-func (u *utilities) Normalize(str string) (*string, error) {
+func (u *utilities) Normalize(str string, typeExpression string) (string, error) {
 
-	var normalizer = transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+	switch typeExpression {
 
-	s, _, err := transform.String(normalizer, str)
-	if err != nil {
-		return nil, err
+	case "space":
+		return strings.Replace(str, " ", "", -1), nil
+
+	case "chars":
+
+		var normalizer = transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+		s, _, err := transform.String(normalizer, str)
+		if err != nil {
+			return "", err
+		}
+		return s, nil
 	}
 
-	r := strings.ToLower(s)
-	return &r, err
+	return "", nil
 }
 
 func (u *utilities) RegularExpression(str string, typeExpression string) bool {
