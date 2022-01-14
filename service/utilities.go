@@ -54,6 +54,10 @@ func (u *utilities) RegularExpression(str string, typeExpression string) bool {
 		expression, _ := regexp.Compile(fmt.Sprintf(`[A-Z\s]{%d}`, len(str)))
 		return expression.MatchString(str)
 
+	case "document":
+		expression, _ := regexp.Compile(`^([a-zA-Z0-9/-]+)$`)
+		return expression.MatchString(str)
+
 	case "yyyy-mm-dd":
 		expression, _ := regexp.Compile(`^\d{4}\-(0?[1-9]|1[012])\-(0?[1-9]|[12][0-9]|3[01])$`)
 		return expression.MatchString(str)
