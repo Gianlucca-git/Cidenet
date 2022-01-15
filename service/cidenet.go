@@ -4,14 +4,16 @@ import (
 	"Cidenet/model/Logic"
 	"Cidenet/model/Request_Response"
 	"Cidenet/repository"
+	"context"
 	"fmt"
 	uuid "github.com/satori/go.uuid"
-	"log"
+	"strconv"
 )
 
 //CidenetManager implement methods
 type CidenetManager interface {
-	InsertEmployees(employee *Request_Response.EmployeesRequest) (error, *ValidationErrors)
+	InsertEmployees(ctx context.Context, employee *Request_Response.Employee) (error, *ValidationErrors)
+	GetEmployees(ctx context.Context, employee *Request_Response.SelectTEmployees) (error, *ValidationErrors, *Request_Response.Employees)
 }
 
 // NewCidenetManager Constructs a new CidenetManager
@@ -29,14 +31,14 @@ type cidenetManager struct {
 	repository.CidenetManager
 }
 
-func (c *cidenetManager) InsertEmployees(employee *Request_Response.EmployeesRequest) (error, *ValidationErrors) {
+func (c *cidenetManager) InsertEmployees(ctx context.Context, employee *Request_Response.Employee) (error, *ValidationErrors) {
 
-	existError, validationErrors := c.CidenetValidator.EmployeesRequest(employee)
+	existError, validationErrors := c.CidenetValidator.InsertEmployees(employee)
 	if existError {
 		return BadRequest, validationErrors
 	}
 
-	existError, validationErrors = c.CidenetValidator.Employees(employee)
+	existError, validationErrors = c.CidenetValidator.InsertEmployees(employee)
 	if existError {
 		return BadRequest, validationErrors
 	}
@@ -47,15 +49,47 @@ func (c *cidenetManager) InsertEmployees(employee *Request_Response.EmployeesReq
 	emp.OthersNames = employee.OthersNames
 	emp.LastName = employee.LastName
 	emp.SecondLastName = employee.SecondLastName
-	emp.Countries = employee.Countries
-	emp.IdentificationType = employee.IdentificationType
+	emp.Countries = employee.CountryId
+	emp.IdentificationType = employee.IdentificationTypeId
 	emp.IdentificationNumber = employee.IdentificationNumber
 	emp.EmailCut, _ = c.Utilities.Normalize(employee.LastName, "space")
 	emp.EmailCut = fmt.Sprintf("%v.%v", employee.Name, emp.EmailCut)
 	emp.Admission = employee.Admission
 	emp.Registration = fmt.Sprintf("%v %v:00.000000", employee.RegistrationDate, employee.RegistrationHours)
-	emp.Department = employee.Department
+	emp.Department = employee.DepartmentId
 
-	log.Println("LOGIC ", emp)
+	err := c.CidenetManager.InsertEmployees(ctx, &emp)
+	if err != nil {
+		validationErrors.DataBase = err.Error()
+		return InternalServerError, validationErrors
+	}
+
 	return nil, nil
+}
+
+func (c *cidenetManager) GetEmployees(ctx context.Context, employee *Request_Response.SelectTEmployees) (error, *ValidationErrors, *Request_Response.Employees) {
+	existError, validationErrors := c.CidenetValidator.GetEmployeesRequest(employee)
+	if existError {
+		return BadRequest, validationErrors, nil
+	}
+
+	limit, err := strconv.Atoi(employee.Limit)
+	if err != nil {
+		validationErrors.Limit = err.Error()
+		return InternalServerError, validationErrors, nil
+	}
+	if limit <= 0 {
+		validationErrors.Limit = IntegerPositive
+		return BadRequest, validationErrors, nil
+	}
+
+	employee.LimitInt = limit
+
+	err, response := c.CidenetManager.GetEmployees(ctx, employee)
+	if err != nil {
+		validationErrors.DataBase = err.Error()
+		return InternalServerError, validationErrors, nil
+	}
+
+	return nil, nil, response
 }

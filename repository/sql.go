@@ -4,6 +4,8 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	_ "github.com/lib/pq"
+	"os"
 	"sync"
 )
 
@@ -12,12 +14,10 @@ var (
 	sqlConnection *sql.DB
 )
 
-//NewSQLConnection returns a new sql connection (connection is a singleton)
 func NewSQLConnection() *sql.DB {
 	return sqlConnection
 }
 
-//LoadSQLConnection load default sql connection
 func LoadSQLConnection() error {
 	var err error
 
@@ -60,17 +60,40 @@ func (c connection) Error() error {
 }
 
 func BD() *sql.DB {
-	/*
-			host: 'bhe1o4gbdndj06xzaufj-mysql.services.clever-cloud.com',
-		    user: 'ujlakyrkypsopo9y',
-		    password: 'JHWjIqZt3Tzr1ptaV2wr',
-		    database: 'bhe1o4gbdndj06xzaufj'
-	*/
-	fmt.Println("Comienzo BD")
-	bd, err := sql.Open("mysql", "ujlakyrkypsopo9y:JHWjIqZt3Tzr1ptaV2wr@tcp(bhe1o4gbdndj06xzaufj-mysql.services.clever-cloud.com:3306)/bhe1o4gbdndj06xzaufj")
+
+	c := struct {
+		host     string
+		user     string
+		password string
+		database string
+		port     string
+		driver   string
+	}{
+		host:     os.Getenv("DB_HOST"),
+		user:     os.Getenv("DB_USER"),
+		password: os.Getenv("DB_PASSWORD"),
+		database: os.Getenv("DB_NAME"),
+		port:     os.Getenv("DB_PORT"),
+		driver:   os.Getenv("DB_DRIVER"),
+	}
+
+	fmt.Println("init connection data base...")
+
+	bd, err := sql.Open(c.driver,
+		fmt.Sprintf(
+			"postgres://%s:%s@%s:%s/%s?sslmode=%s",
+			c.user,
+			c.password,
+			c.host,
+			c.port,
+			c.database,
+			"disable"),
+	)
+
 	if err != nil {
 		panic(err.Error())
 	}
-	fmt.Println("Conectado a BD")
+	fmt.Println("connect to data base!")
+
 	return bd
 }

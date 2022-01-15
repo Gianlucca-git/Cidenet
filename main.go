@@ -17,9 +17,9 @@ const defaultPort = ":8888"
 
 func main() {
 
-	//if err := repo.LoadSQLConnection(); err != nil {
-	//	log.Fatal(err)
-	//}
+	if err := repo.LoadSQLConnection(); err != nil {
+		log.Fatal(err)
+	}
 
 	router := mux.NewRouter().StrictSlash(false) // make the paths different from each other with slash /
 

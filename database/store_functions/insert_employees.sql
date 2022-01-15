@@ -1,8 +1,8 @@
 create or replace function insert_employees(
     uuid_i uuid,
-    firts_name_i varchar, --validate in  back
+    name_i varchar, --validate in  back
     others_names_i varchar, --validate in  back
-    first_last_name_i varchar, --validate in  back
+    last_name_i varchar, --validate in  back
     second_last_name_i varchar, --validate in  back
     countries_id_i int,
     identification_type_id_i int,
@@ -55,7 +55,7 @@ string := ' SELECT COUNT(*) FROM employees WHERE identification_type_id = ' || i
 EXECUTE string into i_count;
 
 IF i_count != 0 then
-        RETURN 'invalid identification';
+        RETURN 'the identification number already exist';
 end if;
     -----------------------------------   END  VALIDATE IDENTIFICATION       -----------------------------------
 
@@ -81,9 +81,9 @@ end if;
 
 INSERT INTO employees values (
                                  uuid_i,
-                                 firts_name_i ,
+                                 name_i ,
                                  others_names_i ,
-                                 first_last_name_i ,
+                                 last_name_i ,
                                  second_last_name_i ,
                                  countries_id_i ,
                                  identification_type_id_i,

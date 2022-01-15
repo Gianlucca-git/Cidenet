@@ -23,7 +23,6 @@ type cidenetManager struct {
 }
 
 func (c *cidenetManager) InsertEmployees(w http.ResponseWriter, r *http.Request) {
-	//w.Header().Set("Content-Type", "application/json")
 	defer func() {
 		err := r.Body.Close()
 		if err != nil {
@@ -31,14 +30,14 @@ func (c *cidenetManager) InsertEmployees(w http.ResponseWriter, r *http.Request)
 		}
 	}()
 
-	var employee Request_Response.EmployeesRequest
+	var employee Request_Response.Employee
 	err := json.NewDecoder(r.Body).Decode(&employee)
 	if err != nil {
 		Response(err.Error(), http.StatusInternalServerError, w)
 		return
 	}
 
-	err, validationErrors := c.CidenetManager.InsertEmployees(&employee)
+	err, validationErrors := c.CidenetManager.InsertEmployees(r.Context(), &employee)
 	if err == service.BadRequest {
 
 		var errorStruct service.ErrorResponse
@@ -46,8 +45,15 @@ func (c *cidenetManager) InsertEmployees(w http.ResponseWriter, r *http.Request)
 		Response(errorStruct, http.StatusBadRequest, w)
 		return
 	}
+	if err == service.InternalServerError {
 
-	Response(employee, 200, w)
+		var errorStruct service.ErrorResponse
+		errorStruct.Error = *validationErrors
+		Response(errorStruct, http.StatusInternalServerError, w)
+		return
+	}
+
+	Response(nil, http.StatusCreated, w)
 
 }
 
@@ -59,7 +65,36 @@ func (c *cidenetManager) GetEmployees(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	Response("{'Gian':'saluda'}", 200, w)
+	var request Request_Response.SelectTEmployees
+	queryParams := r.URL.Query()
+	request.Search = queryParams.Get("search")
+	request.Countries = queryParams["countries"]
+	request.IdentificationsTypes = queryParams["identifications_types"]
+	request.Departments = queryParams["departments"]
+	request.Status = queryParams.Get("status")
+	request.Cursor = queryParams.Get("cursor")
+	request.Limit = queryParams.Get("limit")
+
+	err, validationErrors, response := c.CidenetManager.GetEmployees(r.Context(), &request)
+	if err == service.BadRequest {
+
+		var errorStruct service.ErrorResponse
+		errorStruct.Error = *validationErrors
+		Response(errorStruct, http.StatusBadRequest, w)
+		return
+	}
+	if err == service.InternalServerError {
+
+		var errorStruct service.ErrorResponse
+		errorStruct.Error = *validationErrors
+		Response(errorStruct, http.StatusInternalServerError, w)
+		return
+	}
+	if response == nil {
+		Response(nil, http.StatusNoContent, w)
+	}
+
+	Response(response, http.StatusOK, w)
 }
 
 func Response(resp interface{}, statusCode int, w http.ResponseWriter) {

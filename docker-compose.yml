@@ -36,6 +36,3 @@ services:
       - "DB_NAME=cidenet-db"
       - "DB_PORT=5432"
       - "DB_USER=postgres"
-      - "SCRIPTS_PATH=file:///migrations"
-      - "MAX_SIZE=8192000"
-      - "STORE=/cidenet-api"

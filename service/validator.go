@@ -6,8 +6,9 @@ import (
 )
 
 type CidenetValidator interface {
-	EmployeesRequest(employee *Request_Response.EmployeesRequest) (bool, *ValidationErrors)
-	Employees(employee *Request_Response.EmployeesRequest) (bool, *ValidationErrors)
+	InsertEmployeesRequest(employee *Request_Response.Employee) (bool, *ValidationErrors)
+	InsertEmployees(employee *Request_Response.Employee) (bool, *ValidationErrors)
+	GetEmployeesRequest(employee *Request_Response.SelectTEmployees) (bool, *ValidationErrors)
 }
 
 func NewCidenetValidator() CidenetValidator {
@@ -20,8 +21,8 @@ type cidenetValidator struct {
 	Utilities
 }
 
-//EmployeesRequest validate that the required fields arrive
-func (v *cidenetValidator) EmployeesRequest(employee *Request_Response.EmployeesRequest) (bool, *ValidationErrors) {
+//InsertEmployeesRequest validate that the required fields arrive
+func (v *cidenetValidator) InsertEmployeesRequest(employee *Request_Response.Employee) (bool, *ValidationErrors) {
 	var newErrors ValidationErrors
 	var existError bool
 
@@ -37,12 +38,12 @@ func (v *cidenetValidator) EmployeesRequest(employee *Request_Response.Employees
 		newErrors.SecondLastName = Required
 		existError = true
 	}
-	if employee.Countries == 0 {
-		newErrors.Countries = Required
+	if employee.CountryId == 0 {
+		newErrors.CountryId = Required
 		existError = true
 	}
-	if employee.IdentificationType == 0 {
-		newErrors.IdentificationType = Required
+	if employee.IdentificationTypeId == 0 {
+		newErrors.IdentificationTypeId = Required
 		existError = true
 	}
 	if len(employee.IdentificationNumber) == 0 {
@@ -61,12 +62,16 @@ func (v *cidenetValidator) EmployeesRequest(employee *Request_Response.Employees
 		newErrors.RegistrationHours = Required
 		existError = true
 	}
+	if employee.DepartmentId == 0 {
+		newErrors.DepartmentId = Required
+		existError = true
+	}
 
 	return existError, &newErrors
 }
 
-//Employees validate that the fields are in the correct format
-func (v *cidenetValidator) Employees(employee *Request_Response.EmployeesRequest) (bool, *ValidationErrors) {
+//InsertEmployees validate that the fields are in the correct format
+func (v *cidenetValidator) InsertEmployees(employee *Request_Response.Employee) (bool, *ValidationErrors) {
 	var newErrors ValidationErrors
 	var existError bool
 
@@ -148,6 +153,24 @@ func (v *cidenetValidator) Employees(employee *Request_Response.EmployeesRequest
 	}
 	if timeRegistrationDate.Before(timeAdmission) {
 		newErrors.RegistrationDate = RegistrationDate
+		existError = true
+	}
+
+	return existError, &newErrors
+}
+
+//GetEmployeesRequest validate that the required fields arrive
+func (v *cidenetValidator) GetEmployeesRequest(employee *Request_Response.SelectTEmployees) (bool, *ValidationErrors) {
+	var newErrors ValidationErrors
+	var existError bool
+
+	if employee.Status != "enable" && employee.Status != "disable" && employee.Status != "stand-by" {
+		newErrors.Status = Format
+		existError = true
+	}
+
+	if len(employee.Limit) == 0 {
+		newErrors.Limit = Required
 		existError = true
 	}
 
