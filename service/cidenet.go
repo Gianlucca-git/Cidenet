@@ -14,6 +14,7 @@ import (
 type CidenetManager interface {
 	InsertEmployees(ctx context.Context, employee *Request_Response.Employee) (error, *ValidationErrors)
 	GetEmployees(ctx context.Context, employee *Request_Response.SelectTEmployees) (error, *ValidationErrors, *Request_Response.Employees)
+	UpdateEmployees(ctx context.Context, employee *Request_Response.Employee) (error, *ValidationErrors)
 }
 
 // NewCidenetManager Constructs a new CidenetManager
@@ -92,4 +93,26 @@ func (c *cidenetManager) GetEmployees(ctx context.Context, employee *Request_Res
 	}
 
 	return nil, nil, response
+}
+
+func (c *cidenetManager) UpdateEmployees(ctx context.Context, employee *Request_Response.Employee) (error, *ValidationErrors) {
+
+	existError, validationErrors := c.CidenetValidator.UpdateEmployees(employee)
+	if existError {
+		return BadRequest, validationErrors
+	}
+
+	err := c.CidenetManager.UpdateEmployees(ctx, employee)
+	if err != nil {
+
+		if err.Error() == "no update" {
+			validationErrors.DataBase = err.Error()
+			return nil, validationErrors
+		}
+
+		validationErrors.DataBase = err.Error()
+		return InternalServerError, validationErrors
+	}
+
+	return nil, nil
 }

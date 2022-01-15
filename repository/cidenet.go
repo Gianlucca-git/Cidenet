@@ -8,12 +8,15 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lib/pq"
+	uuid "github.com/satori/go.uuid"
+	"strings"
 )
 
 //CidenetManager constructs a new CidenetManager
 type CidenetManager interface {
 	InsertEmployees(ctx context.Context, employee *Logic.Employee) error
 	GetEmployees(ctx context.Context, employee *Request_Response.SelectTEmployees) (error, *Request_Response.Employees)
+	UpdateEmployees(ctx context.Context, employee *Request_Response.Employee) error
 }
 
 func NewCidenetManager(repository Type) CidenetManager {
@@ -38,10 +41,10 @@ func (c *cidenetManager) InsertEmployees(ctx context.Context, employee *Logic.Em
 	rows, err := prepare.QueryContext(
 		ctx,
 		employee.Uuid,
-		employee.Name,
-		employee.OthersNames,
-		employee.LastName,
-		employee.SecondLastName,
+		strings.ToLower(employee.Name),
+		strings.ToLower(employee.OthersNames),
+		strings.ToLower(employee.LastName),
+		strings.ToLower(employee.SecondLastName),
 		employee.Countries,
 		employee.IdentificationType,
 		employee.IdentificationNumber,
@@ -132,4 +135,47 @@ func (c *cidenetManager) GetEmployees(ctx context.Context, employee *Request_Res
 	response.TotalRegisters = total
 
 	return nil, &response
+}
+
+func (c *cidenetManager) UpdateEmployees(ctx context.Context, employee *Request_Response.Employee) error {
+	prepare, err := c.DB.PrepareContext(ctx, UpdateEmployees)
+	if err != nil {
+		return err
+	}
+
+	rows, err := prepare.QueryContext(
+		ctx,
+		employee.Id,
+		strings.ToLower(employee.Name),
+		strings.ToLower(employee.OthersNames),
+		strings.ToLower(employee.LastName),
+		strings.ToLower(employee.SecondLastName),
+		employee.CountryId,
+		employee.IdentificationTypeId,
+		employee.IdentificationNumber,
+		employee.DepartmentId,
+		employee.Status,
+		uuid.NewV4().String(),
+	)
+
+	if err != nil {
+		return err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var response string
+	if rows.Next() {
+
+		err = rows.Scan(&response)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	if response == "finish" {
+		return nil
+	}
+
+	return errors.New(response)
 }

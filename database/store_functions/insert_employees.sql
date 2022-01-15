@@ -26,14 +26,14 @@ BEGIN
     -- PRUEBA
     /*
     select * from insert_employees(
-            '2314cdbe-c6c2-4a16-a70b-92c149452eb1',
+            '2014cdbe-c6c2-4a16-a70b-92c149452eb2',
             'Laura',
             'Daniela',
             'Aguado',
             'Rendon',
             1,
             1,
-            '00010',
+            '000101',
             'laura.daniela',
             '2022-01-03',
             '2022-01-12 18:08:05.000000',
@@ -41,21 +41,13 @@ BEGIN
     );
     */
 
-    -----------------------------------       VALIDATE MAIL       -----------------------------------
-    -- count the same emails to list them
-    string := ' SELECT COUNT(*) FROM employees WHERE countries_id = ' || countries_id_i::varchar || ' AND  mail like '||chr(39)|| email_cut_i||'%' ||chr(39) ;
-    --raise notice ' SUB QUERY 1 -> %', string;
-EXECUTE string into i_count_mail;
------------------------------------    END VALIDATE MAIL       -----------------------------------
-
-
------------------------------------       VALIDATE IDENTIFICATION       -----------------------------------
-string := ' SELECT COUNT(*) FROM employees WHERE identification_type_id = ' || identification_type_id_i::varchar || ' AND  identification_number = '||chr(39)|| identification_number_i ||chr(39) ;
+    -----------------------------------       VALIDATE IDENTIFICATION       -----------------------------------
+    string := ' SELECT COUNT(*) FROM employees WHERE identification_type_id = ' || identification_type_id_i::varchar || ' AND  identification_number = '||chr(39)|| identification_number_i ||chr(39) ;
     --raise notice ' SUB QUERY 2 -> %', string;
 EXECUTE string into i_count;
 
 IF i_count != 0 then
-        RETURN 'the identification number already exist';
+        RETURN 'invalid identification';
 end if;
     -----------------------------------   END  VALIDATE IDENTIFICATION       -----------------------------------
 
@@ -69,12 +61,7 @@ IF string is null then
         RETURN 'error in build email';
 end if;
 
-    IF i_count_mail = 0 then
-        string := email_cut_i || i_count_mail::varchar || string;
-ELSE
-        string := email_cut_i ||(i_count_mail+1)::varchar || string;
-end if;
-
+    string := email_cut_i || identification_number_i::varchar|| '.' || identification_type_id_i::varchar  || string;
     --raise notice ' EMAIL -> %', string;
 
     -----------------------------------  END  BUILD EMAIL      -----------------------------------

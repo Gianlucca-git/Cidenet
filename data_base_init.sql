@@ -123,7 +123,7 @@ create or replace function insert_employees(
 as
 $$
 DECLARE
-string varchar;
+    string varchar;
     i_count_mail bigint = 0;
     i_count bigint = 0;
 
@@ -132,14 +132,14 @@ BEGIN
     -- PRUEBA
     /*
     select * from insert_employees(
-            '2314cdbe-c6c2-4a16-a70b-92c149452eb1',
+            '2014cdbe-c6c2-4a16-a70b-92c149452eb2',
             'Laura',
             'Daniela',
             'Aguado',
             'Rendon',
             1,
             1,
-            '00010',
+            '000101',
             'laura.daniela',
             '2022-01-03',
             '2022-01-12 18:08:05.000000',
@@ -147,66 +147,53 @@ BEGIN
     );
     */
 
-    -----------------------------------       VALIDATE MAIL       -----------------------------------
-    -- count the same emails to list them
-    string := ' SELECT COUNT(*) FROM employees WHERE countries_id = ' || countries_id_i::varchar || ' AND  mail like '||chr(39)|| email_cut_i||'%' ||chr(39) ;
-    --raise notice ' SUB QUERY 1 -> %', string;
-EXECUTE string into i_count_mail;
------------------------------------    END VALIDATE MAIL       -----------------------------------
-
-
------------------------------------       VALIDATE IDENTIFICATION       -----------------------------------
-string := ' SELECT COUNT(*) FROM employees WHERE identification_type_id = ' || identification_type_id_i::varchar || ' AND  identification_number = '||chr(39)|| identification_number_i ||chr(39) ;
+    -----------------------------------       VALIDATE IDENTIFICATION       -----------------------------------
+    string := ' SELECT COUNT(*) FROM employees WHERE identification_type_id = ' || identification_type_id_i::varchar || ' AND  identification_number = '||chr(39)|| identification_number_i ||chr(39) ;
     --raise notice ' SUB QUERY 2 -> %', string;
-EXECUTE string into i_count;
+    EXECUTE string into i_count;
 
-IF i_count != 0 then
-        RETURN 'the identification number already exist';
-end if;
+    IF i_count != 0 then
+        RETURN 'invalid identification';
+    end if;
     -----------------------------------   END  VALIDATE IDENTIFICATION       -----------------------------------
 
 
     -----------------------------------      BUILD EMAIL      -----------------------------------
     string := ' SELECT domain FROM countries WHERE id = ' || countries_id_i::varchar ;
     --raise notice ' SUB QUERY 3 -> %', string;
-EXECUTE string into string;
+    EXECUTE string into string;
 
-IF string is null then
+    IF string is null then
         RETURN 'error in build email';
-end if;
+    end if;
 
-    IF i_count_mail = 0 then
-        string := email_cut_i || i_count_mail::varchar || string;
-ELSE
-        string := email_cut_i ||(i_count_mail+1)::varchar || string;
-end if;
-
+    string := email_cut_i || identification_number_i::varchar|| '.' || identification_type_id_i::varchar  || string;
     --raise notice ' EMAIL -> %', string;
 
     -----------------------------------  END  BUILD EMAIL      -----------------------------------
 
-INSERT INTO employees values (
-                                 uuid_i,
-                                 name_i ,
-                                 others_names_i ,
-                                 last_name_i ,
-                                 second_last_name_i ,
-                                 countries_id_i ,
-                                 identification_type_id_i,
-                                 identification_number_i ,
-                                 string  ,
-                                 admission_i::date ,
-                                 registration_i::timestamp,
-                                 department_id_i
-                             );
+     INSERT INTO employees values (
+                                        uuid_i,
+                                        name_i ,
+                                        others_names_i ,
+                                        last_name_i ,
+                                        second_last_name_i ,
+                                        countries_id_i ,
+                                        identification_type_id_i,
+                                        identification_number_i ,
+                                        string  ,
+                                        admission_i::date ,
+                                        registration_i::timestamp,
+                                        department_id_i
+    );
 
-RETURN 'finished successfully';
+    RETURN 'finished successfully';
 
 EXCEPTION
     WHEN unique_violation THEN
         GET STACKED DIAGNOSTICS string = CONSTRAINT_NAME;
         RAISE EXCEPTION '%', string;
-WHEN others THEN
+    WHEN others THEN
         ROLLBACK;
         RAISE EXCEPTION
             USING ERRCODE = sqlstate
@@ -370,6 +357,201 @@ EXCEPTION
         RAISE EXCEPTION
             USING ERRCODE = sqlstate
                 ,MESSAGE = 'select_employees() [' || sqlstate || '] : ' || sqlerrm;
+END
+$$;
+
+
+create or replace function update_employee(
+    uuid_i uuid,
+    name_i varchar,
+    others_names_i varchar,
+    last_name_i varchar,
+    second_last_name_i varchar,
+    countries_id_i int,
+    identification_type_id_i int,
+    identification_number_i varchar,
+    department_id_i int,
+    status_i status_user,
+    uuid_trace_i uuid
+)
+    returns varchar
+    language plpgsql
+as
+$$
+DECLARE
+    s_json                  json;
+    s_sql                   varchar;
+    --
+    name_                   varchar;
+    others_names_           varchar;
+    last_name_              varchar;
+    second_last_name_       varchar;
+    countries_id_           int;
+    identification_type_id_ int;
+    identification_number_  varchar;
+    department_id_          int;
+    status_                 status_user;
+    --
+    mail_                   varchar;
+    domain                  varchar;
+    --
+    update_row              bool = false ;
+    build_email             bool = false ;
+
+
+BEGIN
+
+    -- TRAER EL REGISTRO ACTUAL
+    s_sql := 'SELECT  name,others_names,last_name,second_last_name, countries_id,' ||
+             'identification_type_id,identification_number,department_id,status, mail ' ||
+             ' FROM employees WHERE  id = ' || chr(39) || uuid_i || chr(39) || '';
+    --raise notice ' s_sql %', s_sql;
+    Execute s_sql
+        into name_,others_names_,last_name_,second_last_name_,
+            countries_id_,identification_type_id_,identification_number_,
+            department_id_,status_,mail_;
+
+    if name_i != name_ then
+        update_row := true;
+        build_email := true;
+        --raise notice ' log 1';
+    end if;
+    if not (update_row) and (others_names_i != others_names_) then
+        update_row := true;
+        --raise notice ' log 2';
+    end if;
+    if not (update_row) and (last_name_i != last_name_) then
+        update_row := true;
+        build_email := true;
+        --raise notice ' log 3';
+    end if;
+    if not (update_row) and (second_last_name_i != second_last_name_) then
+        update_row := true;
+        --raise notice ' log 4';
+    end if;
+    if not (update_row) and (identification_type_id_i != identification_type_id_) then
+        update_row := true;
+        build_email := true;
+        -- raise notice ' log 5';
+    end if;
+    if not (update_row) and (identification_number_i != identification_number_) then
+        build_email := true;
+        update_row := true;
+        --raise notice ' log 6';
+    end if;
+    if not (update_row) and (department_id_i != department_id_) then
+        update_row := true;
+        --raise notice ' log 7';
+    end if;
+    if not (update_row) and (status_i != status_) then
+        update_row := true;
+        --raise notice ' log 8';
+    end if;
+    if not (update_row) and (countries_id_i != countries_id_) then
+        update_row := true;
+        build_email := true;
+        --raise notice ' log 9';
+    end if;
+
+    if not (update_row) then
+        return 'no update';
+    end if;
+
+    -----------------------------------    DYNAMIC  BUILD EMAIL      -----------------------------------
+    if build_email then
+
+        if countries_id_i = 0 then
+
+            s_sql := ' SELECT domain FROM countries WHERE id = ' || countries_id_::varchar;
+            --raise notice ' SUB QUERY 3 -> %', s_sql;
+            EXECUTE s_sql into domain;
+        else
+
+            s_sql := ' SELECT domain FROM countries WHERE id = ' || countries_id_i::varchar;
+            --raise notice ' SUB QUERY 3 -> %', s_sql;
+            EXECUTE s_sql into domain;
+        end if;
+
+        IF domain is null then
+            RETURN 'error in build email';
+        end if;
+
+        if name_i = '' then
+            mail_ := name_;
+        else
+            mail_ := name_i;
+        end if;
+
+        if last_name_i = '' then
+            mail_ := mail_ || '.' || last_name_;
+        else
+            mail_ := mail_ || '.' || last_name_i;
+        end if;
+
+        if identification_number_i = '' then
+            mail_ := mail_ || identification_number_;
+        else
+            mail_ := mail_ || identification_number_i;
+        end if;
+
+        if identification_type_id_i = 0 then
+            mail_ := mail_ || '.' || identification_type_id_::varchar;
+        else
+            mail_ := mail_ || '.' || identification_type_id_i::varchar;
+        end if;
+
+        mail_ := mail_ || domain;
+
+        --raise notice ' EMAIL -> %', mail_;
+    end if;
+
+    -----------------------------------  END  BUILD EMAIL      -----------------------------------
+
+    -- ACTUALIZAR A NUEVO REGISTRO
+    UPDATE "employees"
+    SET "name"                   = COALESCE(NULLIF(name_i, ''), "name"),
+        "others_names"           = COALESCE(NULLIF(others_names_i, ''), "others_names"),
+        "last_name"              = COALESCE(NULLIF(last_name_i, ''), "last_name"),
+        "second_last_name"       = COALESCE(NULLIF(second_last_name_i, ''), "second_last_name"),
+        "countries_id"           = COALESCE(NULLIF(countries_id_i, 0), "countries_id"),
+        "identification_type_id" = COALESCE(NULLIF(identification_type_id_i, 0), "identification_type_id"),
+        "identification_number"  = COALESCE(NULLIF(identification_number_i, ''), "identification_number"),
+        "mail"                   = COALESCE(NULLIF(mail_, ''), "mail"),
+        "admission"              = "admission",
+        "registration"           = "registration",
+        "department_id"          = COALESCE(NULLIF(department_id_i, 0), "department_id"),
+        "status"                 = (COALESCE(NULLIF((status_i::varchar), ''), "mail"))::status_user
+
+    WHERE id = uuid_i;
+
+
+    s_json := '{"name": "' || name_ || '", ' ||
+              '"others_names": "' || others_names_ || '", ' ||
+              '"last_name": "' || last_name_ || '", ' ||
+              '"second_last_name": "' || second_last_name_ || '", ' ||
+              '"countries_id": "' || countries_id_ || '", ' ||
+              '"identification_type_id": "' || identification_type_id_ || '", ' ||
+              '"identification_number": "' || identification_number_ || '", ' ||
+              '"mail": "' || mail_ || '", ' ||
+              '"department_id": "' || department_id_ || '", ' ||
+              '"status": "' || status_ || '" ' ||
+              ' }';
+
+
+    INSERT INTO users_trace
+    values (uuid_trace_i,
+            uuid_i,
+            s_json::jsonb,
+            current_timestamp);
+
+    return 'finish';
+
+EXCEPTION
+    WHEN others THEN
+        ROLLBACK;
+        RAISE EXCEPTION
+            USING ERRCODE = sqlstate
+                ,MESSAGE = 'update_employee [' || sqlstate || '] : ' || sqlerrm;
 END
 $$;
 

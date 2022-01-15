@@ -9,6 +9,7 @@ type CidenetValidator interface {
 	InsertEmployeesRequest(employee *Request_Response.Employee) (bool, *ValidationErrors)
 	InsertEmployees(employee *Request_Response.Employee) (bool, *ValidationErrors)
 	GetEmployeesRequest(employee *Request_Response.SelectTEmployees) (bool, *ValidationErrors)
+	UpdateEmployees(employee *Request_Response.Employee) (bool, *ValidationErrors)
 }
 
 func NewCidenetValidator() CidenetValidator {
@@ -172,6 +173,57 @@ func (v *cidenetValidator) GetEmployeesRequest(employee *Request_Response.Select
 	if len(employee.Limit) == 0 {
 		newErrors.Limit = Required
 		existError = true
+	}
+
+	return existError, &newErrors
+}
+
+func (v *cidenetValidator) UpdateEmployees(employee *Request_Response.Employee) (bool, *ValidationErrors) {
+	var newErrors ValidationErrors
+	var existError bool
+
+	if len(employee.Name) != 0 {
+		if ok := v.Utilities.RegularExpression(employee.Name, "upper"); len(employee.Name) > 20 || !ok {
+			newErrors.Name = Format
+			existError = true
+		}
+	}
+
+	if len(employee.LastName) != 0 {
+		if ok := v.Utilities.RegularExpression(employee.LastName, "upper&space"); len(employee.LastName) > 20 || !ok {
+			newErrors.LastName = Format
+			existError = true
+		}
+	}
+
+	if len(employee.SecondLastName) != 0 {
+		if ok := v.Utilities.RegularExpression(employee.SecondLastName, "upper&space"); len(employee.SecondLastName) > 20 || !ok {
+			newErrors.SecondLastName = Format
+			existError = true
+		}
+	}
+
+	if len(employee.OthersNames) != 0 {
+		if len(employee.OthersNames) > 0 {
+			if ok := v.Utilities.RegularExpression(employee.OthersNames, "upper&space"); len(employee.OthersNames) > 50 || !ok {
+				newErrors.OthersNames = Format
+				existError = true
+			}
+		}
+	}
+
+	if len(employee.IdentificationNumber) != 0 {
+		if ok := v.Utilities.RegularExpression(employee.IdentificationNumber, "document"); len(employee.IdentificationNumber) > 20 || !ok {
+			newErrors.IdentificationNumber = Format
+			existError = true
+		}
+	}
+
+	if len(employee.IdentificationNumber) != 0 {
+		if employee.Status != "enable" && employee.Status != "disable" && employee.Status != "stand-by" {
+			newErrors.Status = Format
+			existError = true
+		}
 	}
 
 	return existError, &newErrors
